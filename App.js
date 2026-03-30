@@ -1,20 +1,100 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
+// import ทุกหน้า
+import HomeScreen from './src/screens/HomeScreen';
+import CardScreen from './src/screens/CardScreen';
+import CameraScreen from './src/screens/CameraScreen';
+import ChallengeScreen from './src/screens/ChallengeScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+
+const Tab = createBottomTabNavigator();
+
+// ปุ่มกล้องตรงกลาง
+function CameraTabButton({ children, onPress }) {
+  return (
+    <TouchableOpacity
+      style={styles.cameraButtonWrapper}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cameraButton}>
+        {children}
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarActiveTintColor: '#ff6600',
+          tabBarInactiveTintColor: 'gray',
+          tabBarStyle: styles.tabBar,
+
+          tabBarIcon: ({ color, size, focused }) => {
+            let iconName;
+
+            if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
+            else if (route.name === 'Challenge') iconName = focused ? 'trophy' : 'trophy-outline';
+            else if (route.name === 'Camera') iconName = focused ? 'camera' : 'camera-outline';
+            else if (route.name === 'Card') iconName = focused ? 'card' : 'card-outline';
+            else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
+
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+        })}
+      >
+        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Card" component={CardScreen} />
+
+        <Tab.Screen
+          name="Camera"
+          component={CameraScreen}
+          options={{
+            tabBarLabel: '',
+            tabBarButton: (props) => <CameraTabButton {...props} />,
+            tabBarIcon: ({ focused }) => (
+              <Ionicons
+                name={focused ? 'camera' : 'camera-outline'}
+                size={28}
+                color="#fff"
+              />
+            ),
+          }}
+        />
+
+        <Tab.Screen name="Challenge" component={ChallengeScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+  tabBar: {
+    height: 70,
+    paddingBottom: 8,
+    paddingTop: 8,
+  },
+  cameraButtonWrapper: {
+    top: -20,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ff6600',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
   },
 });
