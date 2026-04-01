@@ -18,6 +18,7 @@ import AdminVoteScreen from './Backend/src/screens/AdminVoteScreen';
 import StudyPlanScreen from './src/screens/StudyPlanScreen';
 import ScoreScreen from './src/screens/ScoreScreen';
 import InternshipScreen from './src/screens/InternshipScreen';
+import AdminStudyPlanScreen from './Backend/src/screens/AdminStudyPlanScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -92,6 +93,7 @@ export default function App() {
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="Vote" component={VoteScreen} />
           <Stack.Screen name="AdminVote" component={AdminVoteScreen} />
+          <Stack.Screen name="AdminStudyPlan" component={AdminStudyPlanScreen} />
           <Stack.Screen name="StudyPlan" component={StudyPlanScreen} />
           <Stack.Screen name="Score" component={ScoreScreen} />
           <Stack.Screen name="Internship" component={InternshipScreen} />

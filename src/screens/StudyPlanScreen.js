@@ -1,7 +1,87 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
+import { ref, onValue } from 'firebase/database';
+import { db } from '../../firebase';
+import { useUserAuth } from '../context/UserAuthContext';
 
 export default function StudyPlanScreen({ navigation }) {
+  const { user, loading } = useUserAuth();
+
+  const [plans, setPlans] = useState([]);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => {
+    const studyRef = ref(db, 'studyPlans');
+
+    const unsubscribe = onValue(studyRef, (snapshot) => {
+      const data = snapshot.val();
+
+      if (data) {
+        const list = Object.keys(data).map((key) => ({
+          id: key,
+          ...data[key],
+        }));
+
+        // 🔥 filter เฉพาะของครูที่ login
+        const myPlans = list.filter(
+          (item) => item.teacherEmail === user?.email
+        );
+
+        setPlans(myPlans);
+      } else {
+        setPlans([]);
+      }
+
+      setPageLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // 🔄 Loading
+  if (loading || pageLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#ff6b00" />
+        <Text style={{ marginTop: 10 }}>กำลังโหลด...</Text>
+      </View>
+    );
+  }
+
+  // ❌ ยังไม่ login
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+        >
+          <Text style={styles.backBtn}>← กลับหน้าแรก</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.noData}>กรุณาเข้าสู่ระบบก่อน</Text>
+      </View>
+    );
+  }
+
+  const renderItem = ({ item }) => (
+    <View style={styles.card}>
+      <Text style={styles.title}>
+        {item.subjectCode} - {item.subjectName}
+      </Text>
+
+      <Text style={styles.text}>ครู: {item.teacherName}</Text>
+      <Text style={styles.text}>หน่วยกิต: {item.credit}</Text>
+      <Text style={styles.text}>เวลาเรียน: {item.studyTime}</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -10,15 +90,17 @@ export default function StudyPlanScreen({ navigation }) {
         <Text style={styles.backBtn}>← กลับหน้าแรก</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>ระบบกรอกแผนการเรียน</Text>
-      <Text style={styles.subtitle}>ปวส. และปริญญาตรี ไอที</Text>
+      <Text style={styles.header}>แผนการเรียนของฉัน</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>หน้านี้เตรียมไว้สำหรับ</Text>
-        <Text style={styles.cardText}>- กรอกแผนการเรียน</Text>
-        <Text style={styles.cardText}>- เลือกรายวิชา</Text>
-        <Text style={styles.cardText}>- จัดการแผนการเรียนตามภาคเรียน</Text>
-      </View>
+      <FlatList
+        data={plans}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        ListEmptyComponent={
+          <Text style={styles.noData}>ยังไม่มีแผนการเรียน</Text>
+        }
+      />
     </View>
   );
 }
@@ -29,37 +111,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#f6f8fb',
     padding: 16,
   },
-  backBtn: {
-    color: '#ff6b00',
+  header: {
+    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 16,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#111',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#666',
-    marginBottom: 18,
-  },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     elevation: 2,
   },
-  cardTitle: {
-    fontSize: 18,
+  title: {
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#111',
-  },
-  cardText: {
-    fontSize: 15,
-    color: '#444',
     marginBottom: 8,
+  },
+  text: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 4,
+  },
+  noData: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#777',
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backBtn: {
+    color: '#ff6b00',
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
 });

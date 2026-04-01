@@ -13,17 +13,18 @@ import { useUserAuth } from '../context/UserAuthContext';
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
-  const { isAdmin } = useUserAuth();
+  const { isAdmin, user } = useUserAuth();
 
   const userMenus = [
     { title: 'ระบบโหวต', icon: 'checkmark-done-outline' },
-    { title: 'กรอกแผนการเรียน', icon: 'create-outline' },
-    { title: 'บันทึกคะแนนผลการเรียน', icon: 'school-outline' },
+    { title: 'แผนการเรียน', icon: 'create-outline' },
+    { title: 'คะแนนผลการเรียน', icon: 'school-outline' },
     { title: 'ติดตามการฝึกงาน', icon: 'briefcase-outline' },
   ];
 
   const adminMenus = [
     { title: 'จัดการโหวต', icon: 'settings-outline' },
+    { title: 'จัดการแผนการเรียน', icon: 'clipboard-outline' },
   ];
 
   const menus = isAdmin ? [...userMenus, ...adminMenus] : userMenus;
@@ -60,6 +61,11 @@ export default function HomeScreen({ navigation }) {
       navigation.navigate('AdminVote');
       return;
     }
+
+    if (item.title === 'จัดการแผนการเรียน') {
+      navigation.navigate('AdminStudyPlan');
+      return;
+    }
   };
 
   return (
@@ -70,10 +76,16 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.subtitle}>
           ระบบบริการนักศึกษาแบบสะดวกและทันสมัย
         </Text>
+
+        {user?.email ? (
+          <Text style={styles.userText}>
+            ผู้ใช้งาน: {user.email} {isAdmin ? '(Admin)' : '(User/Teacher)'}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.banner}>
-        <View>
+        <View style={styles.bannerTextBox}>
           <Text style={styles.bannerTitle}>ระบบหลักของโครงการ</Text>
           <Text style={styles.bannerText}>
             รวมระบบโหวต แผนการเรียน คะแนนผลการเรียน และติดตามการฝึกงาน
@@ -82,9 +94,7 @@ export default function HomeScreen({ navigation }) {
         <Ionicons name="apps-outline" size={32} color="#fff" />
       </View>
 
-      <Text style={styles.sectionTitle}>
-        เมนูบริการ {isAdmin ? '(Admin)' : '(User)'}
-      </Text>
+      <Text style={styles.sectionTitle}>เมนูบริการ</Text>
 
       <View style={styles.menuWrapper}>
         {rows.map((row, rowIndex) => (
@@ -138,6 +148,12 @@ const styles = StyleSheet.create({
     color: '#777',
     marginTop: 6,
   },
+  userText: {
+    fontSize: 13,
+    color: '#ff6b00',
+    marginTop: 10,
+    fontWeight: '600',
+  },
   banner: {
     backgroundColor: '#ff6b00',
     borderRadius: 20,
@@ -146,6 +162,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+  },
+  bannerTextBox: {
+    flex: 1,
+    marginRight: 10,
   },
   bannerTitle: {
     color: '#fff',
@@ -156,7 +176,6 @@ const styles = StyleSheet.create({
   bannerText: {
     color: '#fff',
     fontSize: 13,
-    width: 240,
     lineHeight: 18,
   },
   sectionTitle: {
@@ -166,7 +185,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   menuWrapper: {
-    backgroundColor: 'transparent',
     marginBottom: 24,
   },
   row: {

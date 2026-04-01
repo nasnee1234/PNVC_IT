@@ -24,7 +24,6 @@ export default function AdminVoteScreen({ navigation }) {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [optionsText, setOptionsText] = useState('เข้าร่วม,ไม่เข้าร่วม');
   const [votes, setVotes] = useState([]);
   const [editingId, setEditingId] = useState(null);
 
@@ -34,11 +33,11 @@ export default function AdminVoteScreen({ navigation }) {
     const unsubscribe = onValue(votesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const list = Object.keys(data).map((key) => ({
+        const voteList = Object.keys(data).map((key) => ({
           id: key,
           ...data[key],
         }));
-        setVotes(list.reverse());
+        setVotes(voteList.reverse());
       } else {
         setVotes([]);
       }
@@ -55,7 +54,6 @@ export default function AdminVoteScreen({ navigation }) {
         >
           <Text style={styles.backBtn}>← กลับหน้าแรก</Text>
         </TouchableOpacity>
-
         <Text style={styles.noAccess}>คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้</Text>
       </View>
     );
@@ -64,15 +62,7 @@ export default function AdminVoteScreen({ navigation }) {
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setOptionsText('เข้าร่วม,ไม่เข้าร่วม');
     setEditingId(null);
-  };
-
-  const parseOptions = (text) => {
-    return text
-      .split(',')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0);
   };
 
   const handleSaveVote = async () => {
@@ -81,24 +71,11 @@ export default function AdminVoteScreen({ navigation }) {
       return;
     }
 
-    const options = parseOptions(optionsText);
-
-    if (options.length < 2) {
-      Alert.alert('แจ้งเตือน', 'กรุณาใส่ตัวเลือกอย่างน้อย 2 ตัวเลือก');
-      return;
-    }
-
-    const optionVotes = {};
-    options.forEach((option) => {
-      optionVotes[option] = 0;
-    });
-
     try {
       if (editingId) {
         await update(ref(db, `votes/${editingId}`), {
           title: title.trim(),
           description: description.trim(),
-          options,
         });
 
         Alert.alert('สำเร็จ', 'แก้ไขหัวข้อโหวตแล้ว');
@@ -108,8 +85,11 @@ export default function AdminVoteScreen({ navigation }) {
         await set(newVoteRef, {
           title: title.trim(),
           description: description.trim(),
-          options,
-          optionVotes,
+          options: ['เข้าร่วม', 'ไม่เข้าร่วม'],
+          optionVotes: {
+            เข้าร่วม: 0,
+            ไม่เข้าร่วม: 0,
+          },
           userVotes: {},
           createdAt: Date.now(),
         });
@@ -127,7 +107,6 @@ export default function AdminVoteScreen({ navigation }) {
   const handleEdit = (item) => {
     setTitle(item.title || '');
     setDescription(item.description || '');
-    setOptionsText((item.options || []).join(','));
     setEditingId(item.id);
   };
 
@@ -154,35 +133,37 @@ export default function AdminVoteScreen({ navigation }) {
     );
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.voteCard}>
-      <Text style={styles.voteTitle}>{item.title}</Text>
+  const renderItem = ({ item }) => {
+    const joinCount = item.optionVotes?.['เข้าร่วม'] || 0;
 
-      {!!item.description && (
-        <Text style={styles.voteDesc}>{item.description}</Text>
-      )}
+    return (
+      <View style={styles.voteCard}>
+        <Text style={styles.voteTitle}>{item.title}</Text>
 
-      <Text style={styles.optionLabel}>
-        ตัวเลือก: {(item.options || []).join(' / ')}
-      </Text>
+        {!!item.description && (
+          <Text style={styles.voteDesc}>{item.description}</Text>
+        )}
 
-      <View style={styles.actionRow}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.editBtn]}
-          onPress={() => handleEdit(item)}
-        >
-          <Text style={styles.actionText}>แก้ไข</Text>
-        </TouchableOpacity>
+        <Text style={styles.countLabel}>จำนวนผู้เข้าร่วม: {joinCount} คน</Text>
 
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.deleteBtn]}
-          onPress={() => handleDelete(item.id)}
-        >
-          <Text style={styles.actionText}>ลบ</Text>
-        </TouchableOpacity>
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.editBtn]}
+            onPress={() => handleEdit(item)}
+          >
+            <Text style={styles.actionText}>แก้ไข</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.deleteBtn]}
+            onPress={() => handleDelete(item.id)}
+          >
+            <Text style={styles.actionText}>ลบ</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -192,44 +173,35 @@ export default function AdminVoteScreen({ navigation }) {
         <Text style={styles.backBtn}>← กลับหน้าแรก</Text>
       </TouchableOpacity>
 
-      <Text style={styles.header}>จัดการหัวข้อโหวต (Admin)</Text>
+      <Text style={styles.header}>Admin จัดการโหวต</Text>
 
       <View style={styles.formCard}>
         <TextInput
-          style={styles.input}
           placeholder="หัวข้อโหวต"
           value={title}
           onChangeText={setTitle}
+          style={styles.input}
         />
 
         <TextInput
-          style={[styles.input, styles.textArea]}
           placeholder="รายละเอียด"
           value={description}
           onChangeText={setDescription}
+          style={[styles.input, styles.textArea]}
           multiline
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="ตัวเลือก คั่นด้วยลูกน้ำ เช่น เข้าร่วม,ไม่เข้าร่วม"
-          value={optionsText}
-          onChangeText={setOptionsText}
-        />
+        <TouchableOpacity style={styles.addBtn} onPress={handleSaveVote}>
+          <Text style={styles.addBtnText}>
+            {editingId ? 'บันทึกการแก้ไข' : 'เพิ่มหัวข้อ'}
+          </Text>
+        </TouchableOpacity>
 
-        <View style={styles.topActionRow}>
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSaveVote}>
-            <Text style={styles.saveBtnText}>
-              {editingId ? 'บันทึกการแก้ไข' : 'เพิ่มหัวข้อโหวต'}
-            </Text>
+        {editingId && (
+          <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
+            <Text style={styles.cancelBtnText}>ยกเลิก</Text>
           </TouchableOpacity>
-
-          {editingId && (
-            <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
-              <Text style={styles.cancelBtnText}>ยกเลิก</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
       </View>
 
       <FlatList
@@ -246,76 +218,45 @@ export default function AdminVoteScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f6f8fb',
-    padding: 16,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: '#f6f8fb',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  backBtn: {
-    color: '#ff6b00',
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  noAccess: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111',
-    textAlign: 'center',
-  },
-  header: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#111',
-    marginBottom: 16,
-  },
+  container: { flex: 1, backgroundColor: '#f6f8fb', padding: 16 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  backBtn: { color: '#ff6b00', fontWeight: 'bold', marginBottom: 10 },
+  noAccess: { fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
+  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
   formCard: {
     backgroundColor: '#fff',
-    borderRadius: 18,
     padding: 16,
-    marginBottom: 16,
-    elevation: 2,
+    borderRadius: 16,
+    marginBottom: 14,
   },
   input: {
-    backgroundColor: '#f9fafc',
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 12,
-    fontSize: 15,
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 10,
+    backgroundColor: '#fff',
   },
   textArea: {
-    minHeight: 90,
+    minHeight: 80,
     textAlignVertical: 'top',
   },
-  topActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  saveBtn: {
+  addBtn: {
     backgroundColor: '#ff6b00',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 10,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  saveBtnText: {
+  addBtnText: {
     color: '#fff',
     fontWeight: 'bold',
   },
   cancelBtn: {
     backgroundColor: '#eee',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   cancelBtnText: {
     color: '#333',
@@ -323,35 +264,33 @@ const styles = StyleSheet.create({
   },
   voteCard: {
     backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 16,
+    padding: 14,
+    borderRadius: 14,
     marginBottom: 12,
-    elevation: 2,
   },
   voteTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#111',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   voteDesc: {
     fontSize: 14,
     color: '#666',
-    lineHeight: 20,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  optionLabel: {
-    fontSize: 14,
-    color: '#444',
+  countLabel: {
+    fontSize: 15,
+    color: '#ff6b00',
+    fontWeight: 'bold',
     marginBottom: 12,
   },
   actionRow: {
     flexDirection: 'row',
   },
   actionBtn: {
-    borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
+    borderRadius: 10,
     marginRight: 10,
   },
   editBtn: {

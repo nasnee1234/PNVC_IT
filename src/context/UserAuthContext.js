@@ -22,7 +22,7 @@ export function UserAuthProvider({ children }) {
   };
 
   // จุดแยกสิทธิ์
-  const isAdmin = user?.email === 'teacher1@test.com';
+  const isAdmin = user?.email === 'admin@test.com';
 
   return (
     <UserAuthContext.Provider value={{ user, loading, logOut, isAdmin }}>

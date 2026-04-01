@@ -8,14 +8,12 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import {
-  ref,
-  onValue,
-  runTransaction,
-} from 'firebase/database';
+import { ref, onValue, runTransaction, set, get } from 'firebase/database';
 import { db } from '../../firebase';
+import { useUserAuth } from '../context/UserAuthContext';
 
 export default function VoteScreen({ navigation }) {
+  const { user, loading } = useUserAuth();
   const [votes, setVotes] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
 
@@ -41,24 +39,46 @@ export default function VoteScreen({ navigation }) {
     return () => unsubscribe();
   }, []);
 
-  const handleVote = async (voteId, option) => {
+  const handleVote = async (voteId, selectedOption) => {
+    if (!user) {
+      Alert.alert('แจ้งเตือน', 'กรุณาเข้าสู่ระบบก่อน');
+      return;
+    }
+
     try {
-      const optionCountRef = ref(db, `votes/${voteId}/optionVotes/${option}`);
+      const userVoteRef = ref(db, `votes/${voteId}/userVotes/${user.uid}`);
+      const userVoteSnap = await get(userVoteRef);
+
+      if (userVoteSnap.exists()) {
+        Alert.alert('แจ้งเตือน', 'คุณโหวตหัวข้อนี้แล้ว');
+        return;
+      }
+
+      const optionCountRef = ref(db, `votes/${voteId}/optionVotes/${selectedOption}`);
 
       await runTransaction(optionCountRef, (currentValue) => {
         return (currentValue || 0) + 1;
       });
 
-      Alert.alert('สำเร็จ', `คุณโหวต "${option}" แล้ว`);
+      await set(userVoteRef, {
+        uid: user.uid,
+        email: user.email || '',
+        selectedOption,
+        votedAt: Date.now(),
+      });
+
+      Alert.alert('สำเร็จ', `คุณเลือก "${selectedOption}" เรียบร้อยแล้ว`);
     } catch (error) {
       console.log('vote error:', error);
-      Alert.alert('ผิดพลาด', 'โหวตไม่สำเร็จ');
+      Alert.alert('ผิดพลาด', 'บันทึกการโหวตไม่สำเร็จ');
     }
   };
 
   const renderVoteCard = ({ item }) => {
-    const options = item.options || [];
-    const optionVotes = item.optionVotes || {};
+    const userVotes = item.userVotes || {};
+    const myVote = user && userVotes[user.uid] ? userVotes[user.uid] : null;
+    const hasVoted = !!myVote;
+    const selectedOption = myVote?.selectedOption || '';
 
     return (
       <View style={styles.card}>
@@ -68,26 +88,48 @@ export default function VoteScreen({ navigation }) {
           <Text style={styles.cardDesc}>{item.description}</Text>
         )}
 
-        {options.map((option, index) => (
+        <Text style={styles.statusText}>
+          สถานะ: {hasVoted ? `โหวตแล้ว (${selectedOption})` : 'ยังไม่ได้โหวต'}
+        </Text>
+
+        <View style={styles.buttonRow}>
           <TouchableOpacity
-            key={index}
-            style={styles.optionButton}
-            onPress={() => handleVote(item.id, option)}
+            style={[
+              styles.optionButton,
+              styles.joinButton,
+              hasVoted && styles.optionButtonDisabled,
+            ]}
+            onPress={() => handleVote(item.id, 'เข้าร่วม')}
+            disabled={hasVoted}
           >
-            <Text style={styles.optionText}>{option}</Text>
-            <Text style={styles.countText}>
-              {optionVotes[option] || 0} โหวต
+            <Text style={styles.joinText}>
+              {hasVoted && selectedOption === 'เข้าร่วม' ? 'เลือกแล้ว' : 'เข้าร่วม'}
             </Text>
           </TouchableOpacity>
-        ))}
+
+          <TouchableOpacity
+            style={[
+              styles.optionButton,
+              styles.rejectButton,
+              hasVoted && styles.optionButtonDisabled,
+            ]}
+            onPress={() => handleVote(item.id, 'ไม่เข้าร่วม')}
+            disabled={hasVoted}
+          >
+            <Text style={styles.rejectText}>
+              {hasVoted && selectedOption === 'ไม่เข้าร่วม' ? 'เลือกแล้ว' : 'ไม่เข้าร่วม'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
 
-  if (pageLoading) {
+  if (loading || pageLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#ff6b00" />
+        <Text style={{ marginTop: 10 }}>กำลังโหลด...</Text>
       </View>
     );
   }
@@ -106,6 +148,7 @@ export default function VoteScreen({ navigation }) {
         data={votes}
         keyExtractor={(item) => item.id}
         renderItem={renderVoteCard}
+        contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={
           <Text style={styles.emptyText}>ยังไม่มีหัวข้อโหวต</Text>
         }
@@ -122,6 +165,7 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
+    backgroundColor: '#f6f8fb',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -133,6 +177,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: '#111',
     marginBottom: 18,
   },
   card: {
@@ -140,36 +185,60 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 16,
     marginBottom: 14,
+    elevation: 2,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#111',
     marginBottom: 8,
   },
   cardDesc: {
     fontSize: 14,
     color: '#666',
+    lineHeight: 20,
     marginBottom: 10,
   },
-  optionButton: {
-    backgroundColor: '#fff3eb',
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  optionText: {
+  statusText: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 12,
     fontWeight: '600',
-    fontSize: 15,
   },
-  countText: {
-    color: '#ff6b00',
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  optionButton: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+  },
+  joinButton: {
+    backgroundColor: '#fff3eb',
+  },
+  rejectButton: {
+    backgroundColor: '#f1f1f1',
+  },
+  optionButtonDisabled: {
+    opacity: 0.6,
+  },
+  joinText: {
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#ff6b00',
+  },
+  rejectText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#555',
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 40,
     color: '#777',
+    marginTop: 40,
+    fontSize: 15,
   },
 });
