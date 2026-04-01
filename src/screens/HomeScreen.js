@@ -5,18 +5,62 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useUserAuth } from '../context/UserAuthContext';
 
-export default function HomeScreen() {
-  const menus = [
-    { title: 'ยื่นคำร้อง', icon: 'document-text-outline' },
-    { title: 'ข่าวสาร', icon: 'newspaper-outline' },
-    { title: 'กิจกรรม', icon: 'calendar-outline' },
-    { title: 'แผนที่', icon: 'location-outline' },
-    { title: 'ตารางเรียน', icon: 'grid-outline' },
-    { title: 'ติดต่อ', icon: 'call-outline' },
+const { width } = Dimensions.get('window');
+
+export default function HomeScreen({ navigation }) {
+  const { isAdmin } = useUserAuth();
+
+  const userMenus = [
+    { title: 'ระบบโหวต', icon: 'checkmark-done-outline' },
+    { title: 'กรอกแผนการเรียน', icon: 'create-outline' },
+    { title: 'บันทึกคะแนนผลการเรียน', icon: 'school-outline' },
+    { title: 'ติดตามการฝึกงาน', icon: 'briefcase-outline' },
   ];
+
+  const adminMenus = [
+    { title: 'จัดการโหวต', icon: 'settings-outline' },
+  ];
+
+  const menus = isAdmin ? [...userMenus, ...adminMenus] : userMenus;
+
+  const ITEMS_PER_ROW = 4;
+
+  const rows = [];
+  for (let i = 0; i < menus.length; i += ITEMS_PER_ROW) {
+    rows.push(menus.slice(i, i + ITEMS_PER_ROW));
+  }
+
+  const handleMenuPress = (item) => {
+    if (item.title === 'ระบบโหวต') {
+      navigation.navigate('Vote');
+      return;
+    }
+
+    if (item.title === 'กรอกแผนการเรียน') {
+      navigation.navigate('StudyPlan');
+      return;
+    }
+
+    if (item.title === 'บันทึกคะแนนผลการเรียน') {
+      navigation.navigate('Score');
+      return;
+    }
+
+    if (item.title === 'ติดตามการฝึกงาน') {
+      navigation.navigate('Internship');
+      return;
+    }
+
+    if (item.title === 'จัดการโหวต') {
+      navigation.navigate('AdminVote');
+      return;
+    }
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -30,41 +74,40 @@ export default function HomeScreen() {
 
       <View style={styles.banner}>
         <View>
-          <Text style={styles.bannerTitle}>ประกาศสำคัญ</Text>
+          <Text style={styles.bannerTitle}>ระบบหลักของโครงการ</Text>
           <Text style={styles.bannerText}>
-            ติดตามข่าวสาร การแจ้งเตือน และบริการต่าง ๆ ของวิทยาลัยได้ที่นี่
+            รวมระบบโหวต แผนการเรียน คะแนนผลการเรียน และติดตามการฝึกงาน
           </Text>
         </View>
-        <Ionicons name="notifications-outline" size={32} color="#fff" />
+        <Ionicons name="apps-outline" size={32} color="#fff" />
       </View>
 
-      <Text style={styles.sectionTitle}>เมนูบริการ</Text>
-      <View style={styles.grid}>
-        {menus.map((item, index) => (
-          <TouchableOpacity key={index} style={styles.card}>
-            <View style={styles.iconBox}>
-              <Ionicons name={item.icon} size={24} color="#ff6b00" />
+      <Text style={styles.sectionTitle}>
+        เมนูบริการ {isAdmin ? '(Admin)' : '(User)'}
+      </Text>
+
+      <View style={styles.menuWrapper}>
+        {rows.map((row, rowIndex) => (
+          <View key={rowIndex}>
+            <View style={styles.row}>
+              {row.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.menuItem}
+                  activeOpacity={0.8}
+                  onPress={() => handleMenuPress(item)}
+                >
+                  <View style={styles.circle}>
+                    <Ionicons name={item.icon} size={26} color="#ff6b00" />
+                  </View>
+                  <Text style={styles.menuText}>{item.title}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            <Text style={styles.cardText}>{item.title}</Text>
-          </TouchableOpacity>
+
+            {rowIndex !== rows.length - 1 && <View style={styles.stageLine} />}
+          </View>
         ))}
-      </View>
-
-      <Text style={styles.sectionTitle}>ข่าวล่าสุด</Text>
-
-      <View style={styles.newsCard}>
-        <Text style={styles.newsBadge}>แนะนำ</Text>
-        <Text style={styles.newsTitle}>เปิดรับสมัครนักศึกษาใหม่ ประจำปีการศึกษา</Text>
-        <Text style={styles.newsDesc}>
-          สามารถติดตามรายละเอียดการสมัคร ข่าวประชาสัมพันธ์ และกำหนดการต่าง ๆ ได้ในแอป
-        </Text>
-      </View>
-
-      <View style={styles.newsCard}>
-        <Text style={styles.newsTitle}>แจ้งตารางกิจกรรมประจำเดือน</Text>
-        <Text style={styles.newsDesc}>
-          ตรวจสอบกิจกรรมที่กำลังจะมาถึง และติดตามการเข้าร่วมของนักศึกษาได้สะดวกขึ้น
-        </Text>
       </View>
     </ScrollView>
   );
@@ -122,64 +165,42 @@ const styles = StyleSheet.create({
     color: '#111',
     marginBottom: 14,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  menuWrapper: {
+    backgroundColor: 'transparent',
     marginBottom: 24,
   },
-  card: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 18,
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingVertical: 18,
-    paddingHorizontal: 14,
-    marginBottom: 14,
-    alignItems: 'center',
-    elevation: 2,
   },
-  iconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#fff3eb',
+  menuItem: {
+    width: (width - 52) / 4,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  circle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: '#d8d8d8',
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
-  cardText: {
-    fontSize: 15,
+  menuText: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#222',
-  },
-  newsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
-    elevation: 2,
-  },
-  newsBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#fff3eb',
-    color: '#ff6b00',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  newsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111',
-    marginBottom: 8,
-  },
-  newsDesc: {
-    fontSize: 14,
-    color: '#666',
+    textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 16,
+  },
+  stageLine: {
+    height: 1.2,
+    backgroundColor: '#222',
+    opacity: 0.35,
+    width: '100%',
   },
 });

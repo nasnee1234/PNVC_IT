@@ -5,22 +5,23 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import { auth, db } from './src/firebase';
 import { UserAuthProvider } from './src/context/UserAuthContext';
 
-// import ทุกหน้า
 import HomeScreen from './src/screens/HomeScreen';
 import CardScreen from './src/screens/CardScreen';
 import CameraScreen from './src/screens/CameraScreen';
 import ChallengeScreen from './src/screens/ChallengeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
-import LoginScreen from './src/screens/LoginScreen';
-import RegisterScreen from './src/screens/RegisterScreen';
+import VoteScreen from './src/screens/VoteScreen';
+import AdminVoteScreen from './Backend/src/screens/AdminVoteScreen';
+
+import StudyPlanScreen from './src/screens/StudyPlanScreen';
+import ScoreScreen from './src/screens/ScoreScreen';
+import InternshipScreen from './src/screens/InternshipScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// ปุ่มกล้องตรงกลาง
 function CameraTabButton({ children, onPress }) {
   return (
     <TouchableOpacity
@@ -28,9 +29,7 @@ function CameraTabButton({ children, onPress }) {
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <View style={styles.cameraButton}>
-        {children}
-      </View>
+      <View style={styles.cameraButton}>{children}</View>
     </TouchableOpacity>
   );
 }
@@ -46,11 +45,17 @@ function MainTabs() {
         tabBarIcon: ({ color, size, focused }) => {
           let iconName;
 
-          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'Card') iconName = focused ? 'card' : 'card-outline';
-          else if (route.name === 'Camera') iconName = focused ? 'camera' : 'camera-outline';
-          else if (route.name === 'Challenge') iconName = focused ? 'trophy' : 'trophy-outline';
-          else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Card') {
+            iconName = focused ? 'card' : 'card-outline';
+          } else if (route.name === 'Camera') {
+            iconName = focused ? 'camera' : 'camera-outline';
+          } else if (route.name === 'Challenge') {
+            iconName = focused ? 'trophy' : 'trophy-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -58,7 +63,6 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Card" component={CardScreen} />
-
       <Tab.Screen
         name="Camera"
         component={CameraScreen}
@@ -74,7 +78,6 @@ function MainTabs() {
           ),
         }}
       />
-
       <Tab.Screen name="Challenge" component={ChallengeScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -82,28 +85,16 @@ function MainTabs() {
 }
 
 export default function App() {
-  console.log('Auth:', auth);
-  console.log('DB:', db);
-
   return (
     <UserAuthProvider>
       <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen
-            name="MainTabs"
-            component={MainTabs}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{ title: 'เข้าสู่ระบบ' }}
-          />
-          <Stack.Screen
-            name="Register"
-            component={RegisterScreen}
-            options={{ title: 'สมัครสมาชิก' }}
-          />
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="Vote" component={VoteScreen} />
+          <Stack.Screen name="AdminVote" component={AdminVoteScreen} />
+          <Stack.Screen name="StudyPlan" component={StudyPlanScreen} />
+          <Stack.Screen name="Score" component={ScoreScreen} />
+          <Stack.Screen name="Internship" component={InternshipScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </UserAuthProvider>

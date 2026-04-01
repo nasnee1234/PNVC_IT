@@ -1,105 +1,175 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { useUserAuth } from '../context/UserAuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import LoginScreen from './LoginScreen';
 
 export default function ProfileScreen({ navigation }) {
-  const { user, userData, loading, isAdmin } = useUserAuth();
+  const { user, loading, logOut, isAdmin } = useUserAuth();
 
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
-      await signOut(auth);
-      navigation.replace('Login'); // 👈 เด้งไป Login
+      await logOut();
+      Alert.alert('สำเร็จ', 'ออกจากระบบแล้ว');
     } catch (error) {
       console.log(error);
+      Alert.alert('ผิดพลาด', 'ออกจากระบบไม่สำเร็จ');
     }
   };
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>กำลังโหลด...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ff7a00" />
+        <Text style={{ marginTop: 10 }}>กำลังโหลด...</Text>
       </View>
     );
   }
 
   if (!user) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>หน้า Profile</Text>
-        <Text style={styles.text}>ยังไม่มีข้อมูลผู้ใช้</Text>
-        <Text style={styles.text}>กรุณาเข้าสู่ระบบก่อน</Text>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Text style={styles.buttonText}>ไปหน้า Login</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    return <LoginScreen />;
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>หน้า Profile</Text>
+      <View style={styles.profileCard}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+          </Text>
+        </View>
 
-      <Text style={styles.text}>ชื่อ: {userData?.name || '-'}</Text>
-      <Text style={styles.text}>อีเมล: {userData?.email || '-'}</Text>
-      <Text style={styles.text}>บทบาท: {userData?.role || '-'}</Text>
+        <Text style={styles.title}>โปรไฟล์ผู้ใช้</Text>
 
-      {isAdmin && (
-        <TouchableOpacity style={styles.adminButton}>
-          <Text style={styles.buttonText}>เข้าสู่หน้าแอดมิน</Text>
-        </TouchableOpacity>
-      )}
+        <View style={styles.infoBox}>
+          <Text style={styles.label}>อีเมล</Text>
+          <Text style={styles.value}>{user.email}</Text>
+        </View>
+
+        <View style={styles.infoBox}>
+          <Text style={styles.label}>UID</Text>
+          <Text style={styles.value}>{user.uid}</Text>
+        </View>
+
+        <View style={styles.infoBox}>
+          <Text style={styles.label}>สิทธิ์การใช้งาน</Text>
+          <Text style={styles.value}>{isAdmin ? 'Admin' : 'User'}</Text>
+        </View>
+
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.adminButton}
+            onPress={() => navigation.navigate('AdminVote')}
+          >
+            <Text style={styles.adminButtonText}>ไปหน้าจัดการโหวต</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.buttonText}>ออกจากระบบ</Text>
+          <Text style={styles.logoutText}>ออกจากระบบ</Text>
         </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#f4f7fb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f4f7fb',
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
+  },
+  profileCard: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#ff7a00',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#1a1a1a',
   },
-  text: {
-    fontSize: 18,
-    marginBottom: 8,
-  },
-  button: {
-    marginTop: 20,
-    backgroundColor: '#ff6600',
+  infoBox: {
+    width: '100%',
+    backgroundColor: '#f8f9fb',
     padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  value: {
+    fontSize: 16,
+    color: '#111',
+    fontWeight: '600',
   },
   adminButton: {
-    marginTop: 20,
-    backgroundColor: '#ff6600',
-    padding: 14,
-    borderRadius: 10,
+    marginTop: 6,
+    backgroundColor: '#4a90e2',
+    width: '100%',
+    height: 50,
+    borderRadius: 14,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 10,
   },
-  buttonText: {
+  adminButtonText: {
     color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   logoutButton: {
-  marginTop: 20,
-  backgroundColor: 'red',
-  padding: 14,
-  borderRadius: 10,
-  alignItems: 'center',
-},
+    marginTop: 6,
+    backgroundColor: '#ff3b30',
+    width: '100%',
+    height: 50,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
