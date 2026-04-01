@@ -17,7 +17,7 @@ export default function HomeScreen({ navigation }) {
 
   const userMenus = [
     { title: 'ระบบโหวต', icon: 'checkmark-done-outline' },
-    { title: 'แผนการเรียน', icon: 'create-outline' },
+    { title: 'ดูแผนการเรียน', icon: 'create-outline' },
     { title: 'คะแนนผลการเรียน', icon: 'school-outline' },
     { title: 'ติดตามการฝึกงาน', icon: 'briefcase-outline' },
   ];
@@ -42,12 +42,12 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
-    if (item.title === 'กรอกแผนการเรียน') {
-      navigation.navigate('StudyPlan');
+    if (item.title === 'ดูแผนการเรียน') {
+      navigation.navigate(isAdmin ? 'AdminStudyPlan' : 'StudyPlan');
       return;
     }
 
-    if (item.title === 'บันทึกคะแนนผลการเรียน') {
+    if (item.title === 'คะแนนผลการเรียน') {
       navigation.navigate('Score');
       return;
     }
@@ -191,11 +191,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 18,
+    flexWrap: 'wrap',
   },
   menuItem: {
     width: (width - 52) / 4,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    marginBottom: 12,
   },
   circle: {
     width: 64,
@@ -209,11 +211,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   menuText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#222',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   stageLine: {
     height: 1.2,

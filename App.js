@@ -13,11 +13,12 @@ import CameraScreen from './src/screens/CameraScreen';
 import ChallengeScreen from './src/screens/ChallengeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import VoteScreen from './src/screens/VoteScreen';
-import AdminVoteScreen from './Backend/src/screens/AdminVoteScreen';
-
-import StudyPlanScreen from './src/screens/StudyPlanScreen';
 import ScoreScreen from './src/screens/ScoreScreen';
+import ScoreDetailScreen from './src/screens/ScoreDetailScreen';
+import StudyPlanScreen from './src/screens/StudyPlanScreen';
 import InternshipScreen from './src/screens/InternshipScreen';
+
+import AdminVoteScreen from './Backend/src/screens/AdminVoteScreen';
 import AdminStudyPlanScreen from './Backend/src/screens/AdminStudyPlanScreen';
 
 const Tab = createBottomTabNavigator();
@@ -96,6 +97,7 @@ export default function App() {
           <Stack.Screen name="AdminStudyPlan" component={AdminStudyPlanScreen} />
           <Stack.Screen name="StudyPlan" component={StudyPlanScreen} />
           <Stack.Screen name="Score" component={ScoreScreen} />
+          <Stack.Screen name="ScoreDetail" component={ScoreDetailScreen} />
           <Stack.Screen name="Internship" component={InternshipScreen} />
         </Stack.Navigator>
       </NavigationContainer>
